@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NZ Rental Property Tax Calculator</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #0052a3;
+            --secondary: #6c757d;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #28a745;
+            --info: #17a2b8;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+        /* Flowchart text smaller */
+        .flowchart .step h3 {
+            font-size: 1em;
+            margin-bottom: 5px;
+            color: var(--primary);
+            margin-top: 0;
+        }
+        .flowchart .step p {
+            font-size: 0.9em;
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+        .flowchart .step {
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            background-color: var(--light);
+            border-radius: 5px;
+            border-left: 4px solid var(--info);
+        }
+        .flowchart .info-box,
+        .flowchart .warning-box {
+            padding: 8px 12px;
+            font-size: 0.85em;
+            margin: 10px 0;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .input-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        .result-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        .flowchart {
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"], input[type="date"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-right: 5px; /* Add spacing between buttons */
+        }
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--light);
+            border-left: 4px solid var(--primary);
+            border-radius: 4px;
+        }
+        .step {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--light);
+            border-radius: 5px;
+            border-left: 4px solid var(--info);
+        }
+        .step h3 {
+            color: var(--primary);
+            margin-top: 0;
+        }
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid var(--info);
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid var(--warning);
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--light);
+        }
+        .summary-table td:nth-child(2) {
+            text-align: right;
+        }
+        .monthly-income-container { /* Style the container itself */
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
+             gap: 15px;
+        }
+        .month-box {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px; /* Increased padding */
+            background-color: #fdfdfd; /* Slightly off-white */
+        }
+        .month-box h4 {
+            margin-top: 0;
+            margin-bottom: 15px; /* Increased spacing */
+            color: var(--primary);
+            border-bottom: 1px solid #eee; /* Separator line */
+            padding-bottom: 8px;
+        }
+        .checkbox-group {
+            margin-bottom: 8px;
+        }
+        .checkbox-group label {
+            display: inline;
+            font-weight: normal;
+            margin-left: 5px;
+        }
+        .toggle-button {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 8px 12px; /* Adjusted padding */
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px; /* Added top margin */
+            margin-bottom: 15px;
+        }
+        .toggle-button:hover {
+            background-color: #5a6268;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .tab-button {
+            background-color: var(--light);
+            color: var(--dark);
+            border: 1px solid #ddd;
+            padding: 10px 15px; /* Increased padding */
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            flex-grow: 1;
+            text-align: center;
+            transition: background-color 0.3s, border-color 0.3s;
+            margin-right: -1px; /* Overlap borders slightly */
+            position: relative; /* Needed for z-index */
+            z-index: 1;
+        }
+        .tab-button.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            font-weight: bold;
+            color: var(--primary);
+            z-index: 2; /* Bring active tab border to front */
+        }
+        .tab-button:not(.active) {
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-button:not(.active):hover {
+            background-color: #e9ecef; /* Hover effect for inactive tabs */
+        }
+        .tab-content {
+            display: none;
+            border: 1px solid #ddd;
+            border-radius: 0 0 4px 4px;
+            padding: 20px; /* Increased padding */
+            margin-top: -1px;
+            background-color: white;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .occupancy-details {
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        .occupancy-details p {
+            margin-bottom: 5px;
+        }
+        small {
+            color: var(--secondary);
+        }
+        .calculation-note td {
+            font-size: 0.85em;
+            font-style: italic;
+            padding-top: 0;
+            padding-bottom: 5px;
+            border-top: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>NZ Rental Property Tax Calculator</h1>
+        <p>Estimate your taxable rental income for properties in New Zealand (for tax years 2024-25 & 2025-26)</p>
+    </header>
+
+    <div class="flowchart panel">
+        <h2>How This Calculator Works</h2>
+        <div class="info-box">
+            <strong>This calculator is designed for:</strong> Property owners who rent out part of their main home (e.g., renting bedrooms while living in the house) or have a separate rental property. It helps estimate taxable income based on NZ tax rules, including apportionment for private use, interest limitation, and ACC levy for the <strong>2024-2025 and 2025-2026 tax years</strong>.
+        </div>
+        <div class="step">
+            <h3>Step 1: Property & Tax Year Details</h3>
+            <p>Select the tax year (2024-25 or 2025-26) and provide basic information about your property ownership, usage, and annual salary.</p>
+        </div>
+        <div class="step">
+            <h3>Step 2: Monthly Income & Occupancy</h3>
+            <p>Enter the gross rental income received and specify which bedrooms were occupied each month (April to March). This helps determine time-based apportionment.</p>
+        </div>
+        <div class="step">
+            <h3>Step 3: Annual Expenses</h3>
+            <p>Enter your total property expenses for the tax year. These will be apportioned based on usage (space) and occupancy (time) where applicable.</p>
+        </div>
+        <div class="step">
+            <h3>Step 4: Calculate Taxable Income & Tax/Levy</h3>
+            <p>The calculator estimates your taxable rental income, deductible expenses, estimated Income Tax, and ACC Earner's Levy based on your inputs and relevant NZ tax rules for the selected year.</p>
+        </div>
+        <div class="warning-box">
+            <strong>Disclaimer:</strong> This is an estimation tool only. It does not constitute financial or tax advice. Always consult with a qualified tax professional for accurate calculations and advice specific to your circumstances. Tax rules, rates, and levies can change. Calculations use official rates/brackets as known for the selected years but do not account for all individual circumstances (e.g., tax credits, KiwiSaver, student loans, secondary tax).
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="input-section panel">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="openTab(event, 'property-tab')">1. Property Details</button>
+                <button class="tab-button" onclick="openTab(event, 'income-tab')">2. Monthly Income</button>
+                <button class="tab-button" onclick="openTab(event, 'expenses-tab')">3. Annual Expenses</button>
+            </div>
+
+            <div id="property-tab" class="tab-content active">
+                <h2>Property & Tax Year Details</h2>
+                <div class="form-group">
+                    <label for="taxYear">Tax Year:</label>
+                    <select id="taxYear">
+                        <option value="2024-2025" selected>2024-2025 (1 Apr 2024 - 31 Mar 2025)</option>
+                        <option value="2025-2026">2025-2026 (1 Apr 2025 - 31 Mar 2026)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="propertyType">Property Type:</label>
+                    <select id="propertyType">
+                        <option value="main-home">Main home with room(s) rented out (flatmate)</option>
+                        <option value="separate-property">Separate rental property (not main home)</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="purchaseDate">Property Purchase Date:</label>
+                    <input type="date" id="purchaseDate">
+                    <small>Mainly relevant for bright-line test (not calculated here). Interest rules are now less dependent on this date.</small>
+                </div>
+                <div class="form-group">
+                    <label for="totalBedrooms">Total Number of Bedrooms in Property:</label>
+                    <input type="number" id="totalBedrooms" min="1" value="4">
+                </div>
+                <div class="form-group">
+                    <label for="rentedBedrooms">Number of Bedrooms Available for Rent:</label>
+                    <input type="number" id="rentedBedrooms" min="1" value="3">
+                    <small>Used for space apportionment if renting rooms in main home.</small>
+                </div>
+                 <div class="form-group">
+                    <label for="annualSalary">Annual Salary / Wages (before tax):</label>
+                    <input type="number" id="annualSalary" min="0" step="0.01" value="0">
+                    <small>Enter your total employment income for the tax year (before PAYE). Used for overall tax calculation and ACC levy estimate.</small>
+                </div>
+                <button class="toggle-button" onclick="openTab(event, 'income-tab')">Next: Enter Monthly Income →</button>
+            </div>
+
+            <div id="income-tab" class="tab-content">
+                <h2>Monthly Income & Occupancy</h2>
+                <p>Enter the gross rental income and specify which bedrooms were occupied each month for the selected tax year.</p>
+                <button type="button" id="populate-income-button" class="toggle-button">Auto-Fill Income</button>
+
+                <div id="monthly-income-container" class="monthly-income-container">
+                    <div class="month-box">
+                        <h4>April</h4>
+                        <div class="form-group">
+                            <label for="income-april">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-april" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-april" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>May</h4>
+                        <div class="form-group">
+                            <label for="income-may">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-may" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-may" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>June</h4>
+                        <div class="form-group">
+                            <label for="income-june">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-june" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-june" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>July</h4>
+                        <div class="form-group">
+                            <label for="income-july">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-july" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-july" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>August</h4>
+                        <div class="form-group">
+                            <label for="income-august">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-august" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-august" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>September</h4>
+                        <div class="form-group">
+                            <label for="income-september">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-september" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-september" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>October</h4>
+                        <div class="form-group">
+                            <label for="income-october">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-october" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-october" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>November</h4>
+                        <div class="form-group">
+                            <label for="income-november">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-november" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-november" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>December</h4>
+                        <div class="form-group">
+                            <label for="income-december">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-december" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-december" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>January</h4>
+                        <div class="form-group">
+                            <label for="income-january">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-january" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-january" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>February</h4>
+                        <div class="form-group">
+                            <label for="income-february">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-february" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-february" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                    <div class="month-box">
+                        <h4>March</h4>
+                        <div class="form-group">
+                            <label for="income-march">Income ($):</label>
+                            <input type="number" class="monthly-income" id="income-march" min="0" step="0.01" value="0">
+                        </div>
+                        <div id="occupancy-march" class="occupancy-details">
+                             <p><small>(Occupancy checkboxes appear here)</small></p>
+                        </div>
+                    </div>
+                </div>
+                <button class="toggle-button" onclick="openTab(event, 'property-tab')">← Back: Property Details</button>
+                <button class="toggle-button" onclick="openTab(event, 'expenses-tab')">Next: Enter Annual Expenses →</button>
+            </div>
+
+            <div id="expenses-tab" class="tab-content">
+                <h2>Annual Expenses</h2>
+                <p>Enter your total expenses for the selected tax year (e.g., 1 Apr - 31 Mar). Sum up monthly bills (like utilities, internet) to get the annual total.</p>
+                <div class="form-group">
+                    <label for="rates">Rates ($ per year):</label>
+                    <input type="number" id="rates" min="0" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="insurance">Insurance ($ per year):</label>
+                    <input type="number" id="insurance" min="0" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="mortgageInterest">Mortgage Interest ($ per year):</label>
+                    <input type="number" id="mortgageInterest" min="0" step="0.01" value="0">
+                     <div class="info-box">
+                         <small>
+                             <strong>Interest Limitation Rules:</strong>
+                             <ul>
+                                 <li>For tax year <strong>1 Apr 2024 - 31 Mar 2025</strong>: Claim <strong>80%</strong> of interest.</li>
+                                 <li>For tax year <strong>1 Apr 2025 - 31 Mar 2026</strong>: Claim <strong>100%</strong> of interest.</li>
+                             </ul>
+                            This calculator applies these percentages after apportionment. Check the <a href="https://www.ird.govt.nz/property/renting-out-residential-property/residential-rental-income-and-paying-tax-on-it/property-interest-rules" target="_blank" rel="noopener noreferrer">IRD website</a> for details.
+                         </small>
+                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="repairs">Repairs & Maintenance ($ per year):</label>
+                    <input type="number" id="repairs" min="0" step="0.01" value="0">
+                    <small>Costs to restore property to its previous state, not capital improvements.</small>
+                </div>
+                 <div class="form-group">
+                    <label for="utilities">Utilities (Power, Gas, Internet etc.) ($ per year):</label>
+                    <input type="number" id="utilities" min="0" step="0.01" value="0">
+                    <small>Sum your monthly bills for the tax year.</small>
+                </div>
+                 <div class="form-group">
+                    <label for="other">Other Expenses (e.g., Body Corp, Property Manager Fees, Accounting) ($ per year):</label>
+                    <input type="number" id="other" min="0" step="0.01" value="0">
+                </div>
+                 <button class="toggle-button" onclick="openTab(event, 'income-tab')">← Back: Monthly Income</button>
+                 <button type="button" onclick="calculateResults()">Calculate Results</button>
+            </div>
+        </div> <div class="result-section panel">
+            <h2>Calculation Results</h2>
+            <button type="button" id="exportButton" onclick="exportToExcel()" style="background-color: var(--success); margin-bottom: 15px;" disabled>Export to Excel</button>
+             <small id="exportButtonNote" style="display: block; margin-bottom: 15px;">Calculate results first to enable export.</small>
+            <div id="result-output">
+                <p>Results will appear here after you click "Calculate Results".</p>
+            </div>
+        </div> </div> <script>
+
+    // --- Variable to store results ---
+    let calculationResultsData = null; // Use null initially
+
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].classList.remove("active");
+        }
+        tablinks = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+        document.getElementById(tabName).classList.add("active");
+        if (evt && evt.currentTarget) { // Add check if evt exists
+           evt.currentTarget.classList.add("active");
+        } else if (tabName) { // Fallback for direct calls if needed
+            // Find the button corresponding to tabName and activate it
+            const button = document.querySelector(`.tab-button[onclick*="'${tabName}'"]`);
+            if (button) button.classList.add('active');
+        }
+    }
+
+    // --- Auto-Fill and Dynamic Checkboxes ---
+    document.getElementById('populate-income-button').addEventListener('click', function() {
+        const totalIncome = prompt("Enter total annual income to distribute evenly across months:", "12000");
+        if (totalIncome && !isNaN(totalIncome) && totalIncome > 0) {
+            const monthlyIncome = (parseFloat(totalIncome) / 12).toFixed(2);
+            const incomeInputs = document.querySelectorAll('.monthly-income'); // Use class selector
+            incomeInputs.forEach(input => input.value = monthlyIncome);
+                alert(`Filled each month with $${monthlyIncome}.`);
+        } else if (totalIncome !== null) { // Avoid alert if user cancelled prompt
+                alert('Invalid input. Please enter a positive number.');
+        }
+    });
+
+    function setupOccupancyCheckboxes() {
+        const rentedBedroomsInput = document.getElementById('rentedBedrooms');
+        const rentedBedrooms = parseInt(rentedBedroomsInput.value) || 0;
+        const occupancyDivs = document.querySelectorAll('.occupancy-details'); // Use class selector
+
+        occupancyDivs.forEach(div => {
+            div.innerHTML = ''; // Clear existing content
+            if (rentedBedrooms > 0 && rentedBedrooms <= 20) { // Add a reasonable upper limit
+                div.innerHTML = '<p><strong>Occupancy this month:</strong></p>';
+                for (let i = 1; i <= rentedBedrooms; i++) {
+                    const month = div.id.split('-')[1];
+                    const checkboxId = `occupied-${month}-bed${i}`;
+                    const checkboxHTML = `
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="${checkboxId}" name="${checkboxId}" value="occupied">
+                            <label for="${checkboxId}">Bedroom ${i} Occupied</label>
+                        </div>
+                    `;
+                    div.innerHTML += checkboxHTML;
+                }
+            } else if (rentedBedrooms > 20) {
+                div.innerHTML = '<p><small>Number of bedrooms seems high. Please check.</small></p>';
+            }
+            else {
+                div.innerHTML = '<p><small>(Set number of rentable bedrooms > 0 to see checkboxes)</small></p>';
+            }
+        });
+    }
+
+    // Listener for changes and initial setup
+    document.getElementById('rentedBedrooms').addEventListener('input', setupOccupancyCheckboxes); // Use 'input' for immediate feedback
+    document.addEventListener('DOMContentLoaded', function() {
+        setupOccupancyCheckboxes(); // Initial setup on page load
+        // Ensure the first tab is active on load
+        openTab(null, 'property-tab'); // Pass null for event as it's not user-triggered
+    });
+
+    //CALCULATE THE RESULTS
+    function calculateResults() {
+        const resultOutput = document.getElementById('result-output');
+        calculationResultsData = null; // Reset results before calculation
+
+        // Disable export button during calculation and show note
+        const exportButton = document.getElementById('exportButton');
+        const exportButtonNote = document.getElementById('exportButtonNote');
+        if (exportButton) exportButton.disabled = true;
+        if (exportButtonNote) exportButtonNote.style.display = 'block';
+
+        resultOutput.innerHTML = '<p>Calculating...</p>'; // Show feedback
+
+        try {
+            // --- 1. Get Input Values ---
+            const taxYear = document.getElementById('taxYear').value;
+            const propertyType = document.getElementById('propertyType').value;
+            const totalBedrooms = parseInt(document.getElementById('totalBedrooms').value) || 1;
+            const rentedBedrooms = parseInt(document.getElementById('rentedBedrooms').value) || 0;
+            const annualSalary = parseFloat(document.getElementById('annualSalary').value) || 0;
+            const purchaseDate = document.getElementById('purchaseDate').value; // Get purchase date
+
+            // Monthly Income & Occupancy
+            const months = ['april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'january', 'february', 'march'];
+            let totalGrossIncome = 0;
+            let monthsOccupiedCount = 0;
+            const monthlyIncomeDetails = {}; // Store monthly income for export
+
+            months.forEach(month => {
+                const income = parseFloat(document.getElementById(`income-${month}`).value) || 0;
+                monthlyIncomeDetails[month] = income; // Store for export
+                totalGrossIncome += income;
+                let monthHasOccupancy = false;
+                if (rentedBedrooms > 0) {
+                    for (let i = 1; i <= rentedBedrooms; i++) {
+                        const checkbox = document.getElementById(`occupied-${month}-bed${i}`);
+                        if (checkbox && checkbox.checked) {
+                            monthHasOccupancy = true;
+                            break;
+                        }
+                    }
+                }
+                 // If no income and no occupancy, month is not counted for time apportionment
+                if (monthHasOccupancy || (income > 0 && propertyType === 'separate-property')) {
+                    monthsOccupiedCount++;
+                } else if (income > 0 && propertyType === 'main-home' && rentedBedrooms == 0) {
+                     // Edge case: Renting main home space but haven't specified bedrooms (e.g., whole house short term?)
+                     // Assume occupied if income received in this simplified model for main home without specified rooms
+                     monthsOccupiedCount++;
+                 }
+            });
+
+            // Annual Expenses
+            const rates = parseFloat(document.getElementById('rates').value) || 0;
+            const insurance = parseFloat(document.getElementById('insurance').value) || 0;
+            const mortgageInterestRaw = parseFloat(document.getElementById('mortgageInterest').value) || 0;
+            const repairs = parseFloat(document.getElementById('repairs').value) || 0;
+            const utilities = parseFloat(document.getElementById('utilities').value) || 0;
+            const other = parseFloat(document.getElementById('other').value) || 0;
+            const totalRawExpenses = rates + insurance + mortgageInterestRaw + repairs + utilities + other;
+
+
+            // --- 2. Apportionment Calculations ---
+            let spaceApportionmentFactor = 1.0;
+            let timeApportionmentFactor = 1.0;
+
+            if (propertyType === 'main-home') {
+                if (totalBedrooms > 0 && rentedBedrooms > 0 && rentedBedrooms < totalBedrooms) {
+                    // Standard apportionment by bedrooms
+                    spaceApportionmentFactor = rentedBedrooms / totalBedrooms;
+                } else if (totalBedrooms > 0 && rentedBedrooms >= totalBedrooms) {
+                     // Renting out all rooms - likely treated as full rental (100%) for space
+                     spaceApportionmentFactor = 1.0;
+                 } else if (rentedBedrooms === 0 && totalGrossIncome > 0) {
+                     // Renting part of main home but not defined by rooms (e.g., garage, studio).
+                     // Requires reasonable estimate - this calculator defaults to 100% space use
+                     // which might OVERESTIMATE deductions. User should adjust based on IRD guidance.
+                     spaceApportionmentFactor = 1.0; // Default assumption - needs user check/adjustment
+                     console.warn("Main home rented but 0 rooms specified. Defaulting space apportionment to 100%. Review required.");
+                 }
+                 else {
+                    spaceApportionmentFactor = 0; // No rentable rooms specified or rented = 0
+                }
+            }
+            // else propertyType is 'separate-property', spaceApportionmentFactor remains 1.0
+
+            if (propertyType === 'main-home') {
+                // Time apportionment based on occupied months for main home rentals
+                 if (monthsOccupiedCount > 0) {
+                    timeApportionmentFactor = monthsOccupiedCount / 12;
+                 } else {
+                    timeApportionmentFactor = 0; // No occupied months
+                 }
+            } else { // Separate property
+                 // Time apportionment for separate property - often based on days available for rent.
+                 // Simplified: use 100% if *any* income received, 0% otherwise. More accurate would need days rented/available input.
+                if (totalGrossIncome > 0) {
+                     timeApportionmentFactor = 1.0; // Assume available/rented full year if income exists
+                     // A more accurate calculation would need days available/rented.
+                } else {
+                     timeApportionmentFactor = 0; // No income = 0 time apportionment
+                }
+                 // If monthsOccupiedCount was tracked (e.g., user meticulously unchecked unoccupied months for separate prop), use it?
+                 // Let's stick to the simplified income-based approach for separate properties for now.
+                 if (totalGrossIncome > 0) monthsOccupiedCount = 12; // Reflect the 100% time factor assumption
+            }
+
+
+            // Apply apportionment
+            const apportionedRates = rates * spaceApportionmentFactor * timeApportionmentFactor;
+            const apportionedInsurance = insurance * spaceApportionmentFactor * timeApportionmentFactor;
+            const apportionedUtilities = utilities * spaceApportionmentFactor * timeApportionmentFactor;
+            const apportionedMortgageInterestRaw = mortgageInterestRaw * spaceApportionmentFactor * timeApportionmentFactor; // Renamed for clarity
+            const apportionedRepairs = repairs * spaceApportionmentFactor * timeApportionmentFactor;
+            const apportionedOther = other * spaceApportionmentFactor * timeApportionmentFactor;
+
+            // --- 3. Interest Limitation ---
+            let interestClaimPercentage = 1.0;
+            let interestLimitationNote = '';
+
+            if (taxYear === '2024-2025') { // For 1 Apr 2024 - 31 Mar 2025
+                interestClaimPercentage = 0.80; // 80% deduction
+                interestLimitationNote = '80%';
+            } else if (taxYear === '2025-2026') { // For 1 Apr 2025 - 31 Mar 2026
+                interestClaimPercentage = 1.0; // 100% deduction restored
+                interestLimitationNote = '100% (Fully Deductible)';
+            }
+            // No need for older years
+
+            const allowableInterest = apportionedMortgageInterestRaw * interestClaimPercentage; // Based on the raw apportioned value
+
+            // --- 4. Total Deductible Rental Expenses ---
+            const totalDeductibleExpenses =
+                apportionedRates +
+                apportionedInsurance +
+                allowableInterest + // Use the limited amount
+                apportionedRepairs +
+                apportionedUtilities +
+                apportionedOther;
+
+            // --- 5. Net Rental Income / Loss & Ring-fencing ---
+            const netIncomeOrLoss = totalGrossIncome - totalDeductibleExpenses;
+            let netRentalIncomeForTax = 0;
+            let excessDeductionsCarriedForward = 0;
+
+            if (netIncomeOrLoss > 0) {
+                netRentalIncomeForTax = netIncomeOrLoss;
+            } else {
+                netRentalIncomeForTax = 0; // Loss cannot offset other income (ring-fencing)
+                excessDeductionsCarriedForward = Math.abs(netIncomeOrLoss);
+            }
+
+            // --- 6. Calculate Total Taxable Income ---
+            const totalTaxableIncome = annualSalary + netRentalIncomeForTax;
+
+            // --- 7. ACC Earner's Levy Calculation ---
+            let accRate = 0;
+            let accCap = Infinity;
+            let accMaxLevy = Infinity;
+            let accNote = '';
+
+            if (taxYear === '2024-2025') {
+                accRate = 0.0160; // 1.60%
+                accCap = 142283;
+                accMaxLevy = 2276.52; // 142283 * 1.60%
+                accNote = `(Rate: 1.60%, Cap: $${accCap.toLocaleString()}, Max Levy: $${accMaxLevy.toLocaleString()})`;
+            } else if (taxYear === '2025-2026') {
+                accRate = 0.0167; // 1.67%
+                accCap = 152790;
+                accMaxLevy = 2551.59; // 152790 * 1.67%
+                accNote = `(Rate: 1.67%, Cap: $${accCap.toLocaleString()}, Max Levy: $${accMaxLevy.toLocaleString()})`;
+            }
+
+            // ACC levy applies only to salary/wages income up to the cap
+            const incomeSubjectToAcc = Math.min(Math.max(0, annualSalary), accCap);
+            const estimatedAccLevy = incomeSubjectToAcc * accRate;
+             // Ensure levy doesn't exceed the max levy amount due to potential floating point nuances if salary equals cap
+             const finalEstimatedAccLevy = Math.min(estimatedAccLevy, accMaxLevy);
+
+
+            // --- 8. Calculate Estimated Income Tax ---
+            const calculateIncomeTax = (income, year) => {
+                let tax = 0;
+                let taxableIncomeForCalc = Math.max(0, income);
+                let taxRates = [];
+
+                if (year === '2024-2025') {
+                    taxRates = [
+                        // Threshold is the *upper limit* of the bracket
+                        { threshold: 14000, rate: 0.105 },  // 0 - 14000
+                        { threshold: 15600, rate: 0.1282 }, // 14001 - 15600
+                        { threshold: 48000, rate: 0.175 },  // 15601 - 48000
+                        { threshold: 53500, rate: 0.2164 }, // 48001 - 53500
+                        { threshold: 70000, rate: 0.30 },   // 53501 - 70000
+                        { threshold: 78100, rate: 0.3099 }, // 70001 - 78100
+                        { threshold: 180000, rate: 0.33 },  // 78101 - 180000
+                        { threshold: Infinity, rate: 0.39 } // 180001+
+                    ];
+                } else if (year === '2025-2026') {
+                    taxRates = [
+                        { threshold: 15600, rate: 0.105 },  // 0 - 15600
+                        { threshold: 53500, rate: 0.175 },  // 15601 - 53500
+                        { threshold: 78100, rate: 0.30 },   // 53501 - 78100
+                        { threshold: 180000, rate: 0.33 },  // 78101 - 180000
+                        { threshold: Infinity, rate: 0.39 } // 180001+
+                    ];
+                } else {
+                    console.error("Invalid tax year provided to tax calculation:", year);
+                    return 0; // Return 0 tax for invalid years
+                }
+
+                let remainingIncome = taxableIncomeForCalc;
+                let previousThreshold = 0;
+
+                for (const tier of taxRates) {
+                    if (remainingIncome <= 0.0001) break; // Check against small value for float precision
+
+                    const tierUpperLimit = tier.threshold;
+                    const tierLowerLimit = previousThreshold;
+                    const tierRange = tierUpperLimit - tierLowerLimit;
+
+                    // Amount of income falling into this specific tier
+                    const incomeInTier = Math.min(remainingIncome, tierRange);
+
+                    if (incomeInTier > 0) {
+                        tax += incomeInTier * tier.rate;
+                        remainingIncome -= incomeInTier;
+                    }
+
+                    previousThreshold = tier.threshold; // Set up for next tier
+                }
+                return tax;
+            };
+
+            const incomeTaxOnSalaryOnly = calculateIncomeTax(annualSalary, taxYear);
+            const incomeTaxOnTotalIncome = calculateIncomeTax(totalTaxableIncome, taxYear);
+            const incomeTaxAttributableToRental = Math.max(0, incomeTaxOnTotalIncome - incomeTaxOnSalaryOnly);
+            const incomeTaxAttributableToSalary = incomeTaxOnSalaryOnly; // Tax calculated just on salary income
+
+            // --- 9. Total Estimated Tax & Levy ---
+            const totalEstimatedTaxAndLevy = incomeTaxOnTotalIncome + finalEstimatedAccLevy;
+
+
+            // --- Store Results Numerically Before Formatting ---
+            calculationResultsData = {
+                taxYear: taxYear,
+                propertyType: propertyType,
+                purchaseDate: purchaseDate,
+                totalBedrooms: totalBedrooms,
+                rentedBedrooms: rentedBedrooms,
+                annualSalary: annualSalary,
+                monthlyIncomeDetails: monthlyIncomeDetails,
+                rawRates: rates,
+                rawInsurance: insurance,
+                rawMortgageInterest: mortgageInterestRaw,
+                rawRepairs: repairs,
+                rawUtilities: utilities,
+                rawOther: other,
+                totalRawExpenses: totalRawExpenses,
+                spaceApportionmentFactor: spaceApportionmentFactor,
+                monthsOccupiedCount: monthsOccupiedCount,
+                timeApportionmentFactor: timeApportionmentFactor,
+                totalGrossIncome: totalGrossIncome,
+                apportionedRates: apportionedRates,
+                apportionedInsurance: apportionedInsurance,
+                apportionedMortgageInterestRaw: apportionedMortgageInterestRaw,
+                interestClaimPercentage: interestClaimPercentage,
+                interestLimitationNote: interestLimitationNote,
+                allowableInterest: allowableInterest,
+                apportionedRepairs: apportionedRepairs,
+                apportionedUtilities: apportionedUtilities,
+                apportionedOther: apportionedOther,
+                totalDeductibleExpenses: totalDeductibleExpenses,
+                netIncomeOrLoss: netIncomeOrLoss,
+                netRentalIncomeForTax: netRentalIncomeForTax,
+                excessDeductionsCarriedForward: excessDeductionsCarriedForward,
+                totalTaxableIncome: totalTaxableIncome,
+                // ACC Levy Details
+                accRate: accRate,
+                accCap: accCap,
+                accMaxLevy: accMaxLevy,
+                estimatedAccLevy: finalEstimatedAccLevy, // Use the final capped value
+                accNote: accNote,
+                // Tax Details
+                incomeTaxOnTotalIncome: incomeTaxOnTotalIncome,
+                incomeTaxAttributableToSalary: incomeTaxAttributableToSalary,
+                incomeTaxAttributableToRental: incomeTaxAttributableToRental,
+                totalEstimatedTaxAndLevy: totalEstimatedTaxAndLevy
+            };
+
+
+            // --- 10. Display Results ---
+            const formatCurrency = (value) => value.toLocaleString('en-NZ', { style: 'currency', currency: 'NZD' });
+            const formatPercent = (value) => (value * 100).toFixed(1) + '%';
+
+            resultOutput.innerHTML = `
+                <h3>Rental Income Summary (${taxYear})</h3>
+                <table class="summary-table">
+                    <tr><td>Property Type:</td><td>${propertyType === 'main-home' ? 'Main Home (Rented Rooms)' : 'Separate Rental Property'}</td></tr>
+                    <tr><td>Space Apportionment Factor:</td><td>${formatPercent(spaceApportionmentFactor)} ${propertyType === 'main-home' && rentedBedrooms === 0 && totalGrossIncome > 0 ? '<small><em>(Default used, review needed)</em></small>' : ''}</td></tr>
+                    <tr><td>Months Rented/Occupied (basis for time):</td><td>${monthsOccupiedCount} / 12</td></tr>
+                    <tr><td>Time Apportionment Factor:</td><td>${formatPercent(timeApportionmentFactor)}</td></tr>
+                    <tr><td colspan="2"><hr></td></tr>
+                    <tr><td>Total Gross Rental Income:</td><td>${formatCurrency(totalGrossIncome)}</td></tr>
+                    <tr><td colspan="2"><strong>Allowable Expenses:</strong></td></tr>
+                    <tr><td><em>Rates:</em></td><td>${formatCurrency(apportionedRates)}</td></tr>
+                    <tr><td><em>Insurance:</em></td><td>${formatCurrency(apportionedInsurance)}</td></tr>
+                    <tr><td><em>Mortgage Interest (Raw Apportioned):</em></td><td><em>${formatCurrency(apportionedMortgageInterestRaw)}</em></td></tr>
+                    <tr><td><em>Interest Claim Percentage (${taxYear}):</em></td><td>${interestLimitationNote}</td></tr>
+                    <tr><td><em>Allowable Interest Claimed:</em></td><td>${formatCurrency(allowableInterest)}</td></tr>
+                    <tr><td><em>Repairs & Maintenance:</em></td><td>${formatCurrency(apportionedRepairs)}</td></tr>
+                    <tr><td><em>Utilities:</em></td><td>${formatCurrency(apportionedUtilities)}</td></tr>
+                    <tr><td><em>Other Expenses:</em></td><td>${formatCurrency(apportionedOther)}</td></tr>
+                    <tr><td><strong>Total Allowable Deductions:</strong></td><td><strong>${formatCurrency(totalDeductibleExpenses)}</strong></td></tr>
+                    <tr><td colspan="2"><hr></td></tr>
+                    <tr><td><strong>Estimated Net Rental Income/(Loss):</strong></td><td><strong>${formatCurrency(netIncomeOrLoss)}</strong></td></tr>
+                    <tr><td>Net Rental Income for Tax Calc:</td><td>${formatCurrency(netRentalIncomeForTax)}</td></tr>
+                    <tr><td>Excess Deductions Carried Forward:</td><td>${formatCurrency(excessDeductionsCarriedForward)}</td></tr>
+                </table>
+
+                <h3 style="margin-top: 20px;">Estimated Income Tax & ACC Levy (${taxYear})</h3>
+                <table class="summary-table">
+                    <tr><td>Annual Salary / Wages:</td><td>${formatCurrency(annualSalary)}</td></tr>
+                    <tr><td>(+) Net Rental Income Added:</td><td>${formatCurrency(netRentalIncomeForTax)}</td></tr>
+                    <tr><td><strong>Total Taxable Income (for Income Tax):</strong></td><td><strong>${formatCurrency(totalTaxableIncome)}</strong></td></tr>
+                    <tr><td colspan="2"><hr></td></tr>
+                    <tr><td><strong>Estimated Total Income Tax:</strong></td><td><strong>${formatCurrency(incomeTaxOnTotalIncome)}</strong></td></tr>
+                    <tr><td>Estimated ACC Earner's Levy (on Salary):</td><td>${formatCurrency(finalEstimatedAccLevy)}</td></tr>
+                    <tr class="calculation-note"><td colspan="2"><small><em>ACC Details: ${accNote}</em></small></td></tr>
+                    <tr><td colspan="2"><hr></td></tr>
+                    <tr><td><strong>Total Estimated Tax + ACC Levy:</strong></td><td><strong>${formatCurrency(totalEstimatedTaxAndLevy)}</strong></td></tr>
+                    <tr><td colspan="2"><hr></td></tr>
+                    <tr><td colspan="2"><strong>Approximate Breakdown:</strong></td></tr>
+                    <tr><td><em>Income Tax Attributable to Salary (Est.):</em></td><td><em>${formatCurrency(incomeTaxAttributableToSalary)}</em></td></tr>
+                    <tr><td><em>Income Tax Attributable to Rental Income (Est.):</em></td><td><em>${formatCurrency(incomeTaxAttributableToRental)}</em></td></tr>
+                </table>
+
+                <div class="info-box" style="margin-top: 15px;">
+                    <small>
+                        <strong>Tax & Levy Calculation Notes:</strong>
+                        <ul>
+                            <li>This calculation estimates <strong>Income Tax</strong> based on standard NZ tax brackets for the selected year applied to your total taxable income (Salary + Net Rental).</li>
+                            <li>It also estimates the <strong>ACC Earner's Levy</strong> based on your Salary/Wages input, up to the official cap for the year. ACC is not levied on rental income.</li>
+                             <li>The 'Total Estimated Tax + ACC Levy' provides an overall estimate of these two components.</li>
+                             <li>It does <strong>not</strong> account for:
+                                <ul>
+                                    <li>Tax credits (e.g., Independent Earner Tax Credit).</li>
+                                    <li>KiwiSaver deductions or employer contributions.</li>
+                                    <li>Student loan repayments.</li>
+                                    <li>Other income sources or losses.</li>
+                                    <li>Specific secondary tax codes or tailored tax rates.</li>
+                                </ul>
+                            </li>
+                            <li>The 'attributable' tax amounts estimate how much income tax applies to each income source based on marginal rates.</li>
+                            <li>Tax rates, ACC rates, and ACC caps used are the official figures for the selected tax year (2024-25 or 2025-26). Always verify with official IRD sources.</li>
+                            <li><strong>This calculation is an estimate only. Your actual tax and levy liability may differ. Consult IRD or a tax professional.</strong></li>
+                        </ul>
+                    </small>
+                </div>
+
+                <div class="warning-box" style="margin-top:15px;">
+                    <small><strong>Overall Disclaimer:</strong> This entire calculator provides estimates based on simplified rules and the data entered. It is not financial or tax advice. Always consult a qualified professional. Tax laws, rates, and rules change. </small>
+                </div>
+            `; // End of innerHTML setting
+
+
+            // Enable export button after successful calculation and display
+            if (exportButton) exportButton.disabled = false;
+            if (exportButtonNote) exportButtonNote.style.display = 'none'; // Hide note
+
+
+        } catch (error) {
+            console.error("Calculation Error:", error);
+            resultOutput.innerHTML = `<div class="warning-box">An error occurred during calculation. Please check your inputs and ensure all values are reasonable. Error: ${error.message}</div>`;
+            calculationResultsData = null; // Ensure no partial data is stored on error
+
+            // Keep export disabled on error
+            if (exportButton) exportButton.disabled = true;
+            if (exportButtonNote) exportButtonNote.style.display = 'block'; // Show note on error
+
+        } finally {
+            // Scroll to results regardless of success or error
+            resultOutput.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Function Excel Exporting
+  
+    function exportToExcel() {
+        console.log("Export function called");
+        try {
+            // --- 1. Check if results data exists ---
+            if (!calculationResultsData) {
+                alert("Please calculate the results first before exporting.");
+                console.log("Export aborted: calculationResultsData is null.");
+                return;
+            }
+            console.log("Calculation data found:", calculationResultsData);
+
+
+            // --- 2. Gather Data (Inputs and Stored Results) ---
+            const results = calculationResultsData; // Use the stored data
+
+            // Structure data for Excel sheet (Array of Objects for Key-Value pairs)
+            // This structure remains the same as before
+            const dataToExport = [
+                // Inputs Section
+                { Section: "Inputs", Item: "Tax Year", Value: results.taxYear },
+                { Section: "Inputs", Item: "Property Type", Value: results.propertyType === 'main-home' ? 'Main Home (Rented Rooms)' : 'Separate Rental Property' },
+                { Section: "Inputs", Item: "Purchase Date", Value: results.purchaseDate || "Not entered" },
+                { Section: "Inputs", Item: "Total Bedrooms", Value: results.totalBedrooms },
+                { Section: "Inputs", Item: "Rented Bedrooms", Value: results.rentedBedrooms },
+                { Section: "Inputs", Item: "Annual Salary", Value: results.annualSalary },
+                { Section: "Inputs", Item: "--- Monthly Income ---", Value: "" }, // Separator
+                ...Object.entries(results.monthlyIncomeDetails).map(([key, value]) => ({ Section: "Inputs", Item: key.charAt(0).toUpperCase() + key.slice(1) + " Income", Value: value })),
+                { Section: "Inputs", Item: "--- Annual Expenses (Raw) ---", Value: "" }, // Separator
+                { Section: "Inputs", Item: "Rates", Value: results.rawRates },
+                { Section: "Inputs", Item: "Insurance", Value: results.rawInsurance },
+                { Section: "Inputs", Item: "Mortgage Interest", Value: results.rawMortgageInterest },
+                { Section: "Inputs", Item: "Repairs & Maintenance", Value: results.rawRepairs },
+                { Section: "Inputs", Item: "Utilities", Value: results.rawUtilities },
+                { Section: "Inputs", Item: "Other Expenses", Value: results.rawOther },
+                { Section: "Inputs", Item: "Total Raw Expenses", Value: results.totalRawExpenses },
+                { Section: "", Item: "", Value: "" }, // Blank row separator
+
+                // Results Section
+                { Section: "Results", Item: "--- Apportionment ---", Value: "" },
+                { Section: "Results", Item: "Space Apportionment Factor (%)", Value: results.spaceApportionmentFactor * 100 },
+                { Section: "Results", Item: "Months Occupied/Rented", Value: results.monthsOccupiedCount },
+                { Section: "Results", Item: "Time Apportionment Factor (%)", Value: results.timeApportionmentFactor * 100 },
+                { Section: "Results", Item: "--- Rental Calculation ---", Value: "" },
+                { Section: "Results", Item: "Total Gross Rental Income", Value: results.totalGrossIncome },
+                { Section: "Results", Item: "Apportioned Rates", Value: results.apportionedRates },
+                { Section: "Results", Item: "Apportioned Insurance", Value: results.apportionedInsurance },
+                { Section: "Results", Item: "Apportioned Mortgage Interest (Raw)", Value: results.apportionedMortgageInterestRaw },
+                { Section: "Results", Item: "Interest Claim Percentage Applied", Value: results.interestLimitationNote }, // Use the descriptive note
+                { Section: "Results", Item: "Allowable Interest Claimed", Value: results.allowableInterest },
+                { Section: "Results", Item: "Apportioned Repairs & Maintenance", Value: results.apportionedRepairs },
+                { Section: "Results", Item: "Apportioned Utilities", Value: results.apportionedUtilities },
+                { Section: "Results", Item: "Apportioned Other Expenses", Value: results.apportionedOther },
+                { Section: "Results", Item: "Total Allowable Deductions", Value: results.totalDeductibleExpenses },
+                { Section: "Results", Item: "Net Rental Income/(Loss)", Value: results.netIncomeOrLoss },
+                { Section: "Results", Item: "Net Rental Income for Tax", Value: results.netRentalIncomeForTax },
+                { Section: "Results", Item: "Excess Deductions Carried Forward", Value: results.excessDeductionsCarriedForward },
+                { Section: "", Item: "", Value: "" }, // Blank row separator
+                 { Section: "Results", Item: "--- Tax & Levy Estimation ---", Value: "" },
+                { Section: "Results", Item: "Annual Salary", Value: results.annualSalary },
+                { Section: "Results", Item: "Total Taxable Income (Salary + Rental)", Value: results.totalTaxableIncome },
+                { Section: "Results", Item: "Estimated Total Income Tax", Value: results.incomeTaxOnTotalIncome },
+                { Section: "Results", Item: "ACC Rate Applied (%)", Value: results.accRate * 100 },
+                { Section: "Results", Item: "ACC Income Cap", Value: results.accCap },
+                { Section: "Results", Item: "ACC Maximum Levy", Value: results.accMaxLevy },
+                { Section: "Results", Item: "Estimated ACC Earner's Levy", Value: results.estimatedAccLevy },
+                 { Section: "Results", Item: "Total Estimated Tax + ACC Levy", Value: results.totalEstimatedTaxAndLevy },
+                { Section: "Results", Item: "--- Tax Breakdown (Approx) ---", Value: "" },
+                { Section: "Results", Item: "Income Tax Attributable to Salary (Est.)", Value: results.incomeTaxAttributableToSalary },
+                { Section: "Results", Item: "Income Tax Attributable to Rental Income (Est.)", Value: results.incomeTaxAttributableToRental },
+            ];
+
+            // --- 3. Create Worksheet ---
+            // Use json_to_sheet, but we'll add the title manually later.
+            // We specify headers explicitly to control the order.
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport, {
+                 header: ["Section", "Item", "Value"],
+                 skipHeader: true // Skip default header row as we'll add ours below Title
+             });
+
+            // --- Custom Title and Header Row ---
+            XLSX.utils.sheet_add_aoa(worksheet, [
+                ["NZ Rental Property Tax Calculation Summary"], // Title Row (Row 1, index 0)
+                ["Section", "Item", "Value"]                     // Header Row (Row 2, index 1)
+            ], { origin: "A1" }); // Add starting at A1
+
+            // Merge the title row cells (A1 to C1) -> (Row 0, Col 0 to Row 0, Col 2)
+            worksheet['!merges'] = worksheet['!merges'] || [];
+            worksheet['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } });
+
+            // Set column widths
+            worksheet['!cols'] = [ { wch: 25 }, { wch: 45 }, { wch: 20 } ];
+
+            // --- Apply number formatting ---
+            const valueColIndex = 2; // Column C (0-based index)
+            const numDataRows = dataToExport.length;
+            // Data starts at Excel Row 3, which has an index of 2 in the worksheet object (0=Title, 1=Headers).
+            const startDataRowIndex = 2;
+
+            // Loop through the worksheet rows where data resides
+            for (let R = startDataRowIndex; R < numDataRows + startDataRowIndex; ++R) {
+                const cellRef = XLSX.utils.encode_cell({ r: R, c: valueColIndex });
+                const cell = worksheet[cellRef];
+
+                // Calculate the corresponding index in the original dataToExport array
+                // e.g., Worksheet row 2 corresponds to dataToExport[0]
+                // Worksheet row 3 corresponds to dataToExport[1]
+                const dataArrayIndex = R - startDataRowIndex;
+
+                // Check if the cell exists before proceeding
+                if (cell) {
+                    // **CRITICAL FIX:** Define itemDescription using the correct index *before* using it.
+                    const itemDescription = dataToExport[dataArrayIndex]?.Item || ""; // Get the Item description from the data array
+
+                    // Now apply formatting based on itemDescription and cell value type
+                    if (typeof cell.v === 'number') {
+                        cell.t = 'n'; // Set cell type to number
+
+                        // Apply specific formats
+                        if (itemDescription.includes('Factor (%)') || itemDescription.includes('Rate Applied (%)')) {
+                            cell.z = '0.00"%"'; // Percentage format
+                        } else if (itemDescription.includes('Bedrooms') || itemDescription.includes('Months Occupied')) {
+                            cell.z = '0'; // Whole number format
+                        } else if (itemDescription === 'Interest Claim Percentage Applied') {
+                            // This item is actually text (e.g., "80%", "100% (Fully Deductible)")
+                             cell.t = 's'; // Keep as string
+                             delete cell.z; // Remove number format if accidentally applied
+                         } else {
+                            // Default to currency for most other numeric values in this context
+                            cell.z = '$#,##0.00';
+                        }
+                    } else if (itemDescription === 'Interest Claim Percentage Applied' && typeof cell.v === 'string') {
+                         // Ensure string type if it's the percentage note
+                         cell.t = 's';
+                     }
+                }
+            } // --- End of formatting loop ---
+
+            // --- 4. Create Workbook ---
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Rental Tax Summary");
+
+            // --- 5. Trigger Download ---
+            const filename = `NZ_Rental_Tax_Calc_${results.taxYear}.xlsx`;
+            XLSX.writeFile(workbook, filename);
+
+            console.log("Export successful");
+
+        } catch (error) {
+            console.error("Excel Export Error:", error);
+            // Show a more detailed error alert
+            alert(`An error occurred during export: ${error.message}\n\nStack Trace:\n${error.stack}`);
+        }
+    }
+</script>
+
+</body>
+</html>
